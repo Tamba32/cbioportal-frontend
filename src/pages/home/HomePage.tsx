@@ -3,38 +3,46 @@ import CBioPortalAPI from "../../shared/api/generated/CBioPortalAPI";
 import {CancerStudy} from "../../shared/api/generated/CBioPortalAPI";
 import AppConfig from 'appConfig';
 import {getCbioPortalApiUrl} from "../../shared/api/urls";
+import {observer} from 'mobx-react';
+import client from "shared/api/cbioportalClientInstance";
+import {remoteData, addErrorHandler} from "shared/api/remoteData";
+import BarGraph from "shared/components/barGraph/BarGraph";
 
-interface IHomePageProps
-{
+// interface IHomePageProps
+// {
+// }
+
+export class HomePageStore {
+
+    readonly data = remoteData({
+        invoke: () => {
+            return client.getAllStudiesUsingGET({projection: "DETAILED"});
+
+        }
+    });
 }
 
-interface IHomePageState
-{
-    data?:CancerStudy[];
-}
 
-export default class HomePage extends React.Component<IHomePageProps, IHomePageState>
-{
-    constructor(props:IHomePageProps)
-    {
-        super(props);
-        this.state = {};
-    }
+@observer
+export default class HomePage extends React.Component<{}, {}> {
 
-    client = new CBioPortalAPI(getCbioPortalApiUrl());
+    private store: HomePageStore;
 
-    componentDidMount()
-    {
-        this.client.getAllStudiesUsingGET({
-            projection: "DETAILED"
-        }).then(data => {
-            this.setState({data});
-        });
+    constructor() {
+        super();
+        this.store = new HomePageStore();
     }
 
     public render() {
-        return <pre>
-            { JSON.stringify(this.state.data, null, 4) }
-        </pre>;
-    }
-};
+        if (this.store.data.isComplete) {
+            return (
+                <BarGraph data={this.store.data.result}/>
+            );
+        } else {
+            return null;
+        }
+    };
+}
+
+
+
